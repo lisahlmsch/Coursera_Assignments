@@ -1,0 +1,133 @@
+---
+title: "PracticalMachineLearning_Assignment_Week4"
+author: "Lisa"
+date: "11/22/2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+###################################################
+# Practical Machine Learning - Course Project
+###################################################
+
+## BACKGROUND
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively.
+These type of devices are part of the quantified self movement ??? a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks.
+One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.
+More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+## DATA
+The training data for this project are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har.
+If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+## WHAT YOU SHOULD SUBMIT
+The goal of your project is to predict the manner in which they did the exercise.
+This is the "classe" variable in the training set. You may use any of the other variables to predict with.
+You should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did.
+You will also use your prediction model to predict 20 different test cases.
+
+## SUBMISSION
+
+### Setup
+```{r prep1, warning=FALSE}
+set.seed(123) # set seed for reproducability
+# load libraries 
+library(caret)
+# The caret package provides the ability for implementing 200+ machine learning algorithms.
+
+# import data
+train = read.csv(file="pml-training.csv", na.strings=c("NA", "#DIV/0!", "")) 
+test = read.csv(file="pml-testing.csv", na.strings=c("NA", "#DIV/0!", "")) 
+
+# clean data
+train <- train[, colSums(is.na(train)) == 0] # removes all columns that are NA only
+test <- test[, colSums(is.na(test)) == 0] # removes all columns that are NA only
+train <- train[, -c(1:7)] # removes irrelevant columns ("X", "user_name", timestamps, etc)
+test <- test[, -c(1:7)] # removes irrelevant columns ("X", "user_name", timestamps, etc)
+
+table(train$classe)
+```
+
+```{r prep2}
+# subset data for cross validation
+
+# Approach:
+# 1) Use the training set to split it into two subgroups: subtraining and subtest set
+# 2) Build a model on the subtraining set
+# 3) Evaluate performance on subtest set
+
+subset <- createDataPartition(y = train$classe, p = 0.75, list=FALSE)
+subtrain <- train[subset,] # used for preparing models
+subtest <- train[-subset,] # used for evaluating the models performance on unseen data
+
+dim(subtrain); dim(subtest)
+```
+
+### Train models and predict outcome
+I am going to predict "classe" using a random forest ("rf"), decision tree ("rpart"), Boosting ("gbm") and K nearest neighbours ("knn") model.I chose these models because "classe" is a factor variable. 
+
+#### Decision Tree
+```{r train_RPART, cache = TRUE}
+# Step 1: train model to predict "classe" variable with all other variables
+# Step 2: predict "classe" variable on cross validation set
+# Step 3: validate outcome (Confusion Matrix)
+
+ModelFitRPART <- train(classe~., method="rpart", data=subtrain)
+predRPART <- predict(ModelFitRPART,newdata=subtest)
+confusionMatrix(predRPART, subtest$classe)
+```
+
+#### Random Forest
+```{r train_RF, cache = TRUE}
+ModelFitRF <- train(classe~., method="rf", data=subtrain, trControl=trainControl(method="cv"), number = 10) 
+predRF <- predict(ModelFitRF,newdata=subtest)
+confusionMatrix(predRF, subtest$classe)
+```
+#### KNN
+```{r train_KNN, cache = TRUE}
+ModelFitKNN <- train(classe~., method="knn", data=subtrain)
+predKNN <- predict(ModelFitKNN,newdata=subtest)
+confusionMatrix(predKNN, subtest$classe)
+```
+#### Boosting Model
+```{r train_GBM, cache = TRUE}
+ModelFitGBM <- train(classe~., method="gbm", data=subtrain, verbose = F, trControl = trainControl(method = "cv", number = 10))
+predGBM <- predict(ModelFitGBM,newdata=subtest)
+confusionMatrix(predGBM, subtest$classe)
+```
+
+### Validate outcome
+```{r validation1}
+# For comparison here are all resulting accuracies on the subtest set:
+ACC <- c(confusionMatrix(predRPART, subtest$classe)$overall[1],confusionMatrix(predRF, subtest$classe)$overall[1], confusionMatrix(predKNN, subtest$classe)$overall[1], confusionMatrix(predGBM, subtest$classe)$overall[1])
+# RPART, RF, KNN, GBM
+ACC
+```
+
+```{r validation2}
+# Estimated out-of-sample error on the subtest set:
+ERR <- as.numeric(c(1-confusionMatrix(predRPART, subtest$classe)$overall[1],1-confusionMatrix(predRF, subtest$classe)$overall[1], 1-confusionMatrix(predKNN, subtest$classe)$overall[1], 1-confusionMatrix(predGBM, subtest$classe)$overall[1]))
+ERR
+
+```
+
+
+Random Forest has the best results in predicting the class variable and will be chosen for predicting the classe variable on the test set
+
+### Predict classe variable for test data set
+```{r prediction}
+# Predicting classe variable for test data set using RF
+test_predRF <- predict(ModelFitRF,newdata=test)
+test_predRF
+```
