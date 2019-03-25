@@ -1,0 +1,118 @@
+---
+title: "Regression Models Course Project"
+author: "Lisa Hlmsch"
+date: "5 11 2017"
+output: 
+  html_document: 
+    keep_md: yes
+    self_contained: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Executive Summary
+Exploration of the mtcars dataset has revealed that there is an obvious difference between the gas mileage for automatic and manual transmission.
+The data suggestes that weight and acceleration are confounding variables in the relationship between transmission and gas milage.
+Including these confounding variables, a manual transmission car has better fuel efficiency of 2.94 miles/gallon than automatic transmission cars. 
+
+### Introduction
+In this project I am going to explore the mtcars data set, which comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973-74 models).
+The following question will be addressed:
+
+Is an automatic or manual transmission better for MPG (Miles/(US) gallon)?
+
+
+### Setup
+```{r packages, warning=FALSE, message=FALSE}
+library(ggplot2) 
+library(datasets) 
+
+set.seed(123)
+data(mtcars)
+```
+
+### Dataset exploration
+```{r head mtcars}
+head(mtcars)
+```
+
+Converting transmission variable (am) from numeric to factor variable: 
+```{r factor am}
+mtcars$am <- factor(mtcars$am, labels = c("automatic", "manual"))
+str(mtcars$am)
+```
+
+A histogram of milage counts per transmission type (see appendix) lets us assume that average miles/gallon is higher for manual transmission than for automatic. The boxplot (see appendix) also shows an obvious difference between the gas mileage for automatic and manual transmission.
+
+```{r average mpg per am}
+aggregate(mpg~am, data=mtcars, mean)
+```
+This assumption is true, as this table shows that average miles/gallon of automatic transmission is 17, which is roughly 7 mpg lower than that of manual transmission cars.
+
+### Model Selection
+```{r Simple Linear Regression}
+fit1 <- lm(mpg ~ am, data = mtcars) # Simple Linear regeression
+summary(fit1)$coef
+```
+
+7.24 ist the estimated average miles/gallon comparing manual to automatic transmission 
+This relationship is highly statistical significant. (p: 2.850207e-04 < 0.05, so we reject H0 that the coefficient of am is 0.)
+```{r SLR R2}
+summary(fit1)$r.squared
+```
+R-squared is 0.36 which indicated that this model only explains 36% of the variance, attributed to transmission type alone. 
+
+For model improvement we include other variables, using the step function and build a multivariate linear regression.
+The step function only selects the most correlated variables of the dataset
+
+```{r Multivariate Linear Regression}
+fit2 <- step(lm(mpg ~ ., data = mtcars), trace=0) # Multivariate Linear Regression
+summary(fit2)$coef
+```
+The model includes car weight, acceleration and transmission. A manual transmission car has better fuel efficiency of 2.94 miles/gallon than automatic transmission cars. 
+```{r MLR r2}
+summary(fit2)$r.squared
+```
+85% of mpg variance is explained by the model, which is an improvement to the first model. 
+
+Comparison of both models using ANOVA
+```{r anova}
+anova(fit1, fit2)
+```
+
+The p-value indicates that we should reject the null hypothesis that the means from both models are the same.
+We can thus conclude that weight and acceleration are confounding variables in the relationship between transmission and gas milage.
+
+The Residual vs Fitted plot (see appendix) hows that the residuals are homoscedastic and normally distributed, with the exception of some outliers.
+
+### Conclusion
+Data supports the claim that automatic transmission is better for MPG (Miles/(US) gallon) than manual
+
+
+## Appendix
+
+Histogram of transmission counts:
+```{r hist am}
+ggplot(mtcars, aes(x = mpg, fill = am)) +
+  geom_histogram(colour = "black", binwidth = 1) + 
+  facet_grid(.~am)
+```
+
+Boxplot of MPGs per transmission type
+```{r plot am}
+ggplot(mtcars, aes(x = am, y = mpg)) +
+  geom_boxplot() + 
+  labs(x= "Transmission", y = "MPG", title = "Miles/gallon for automatic and manual transimission")
+```
+
+Residuals plot:
+
+Residual represents variation left unexplained by our model.
+Whenn plotting the residuals we are able to examine any heteroskedacity between the fitted and residual values or any abnormality.
+
+```{r resid}
+par(mfrow = c(2,2))
+plot(fit2, col = 4)
+```
