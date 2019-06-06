@@ -1,0 +1,97 @@
+---
+title: "Developing Data Products - Week 2 Peer-graded Assignment: R Markdown and Leaflet"
+author: "Lisa Halmschlager"
+date: "6/4/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Instructions
+
+Create a web page using R Markdown that features a map created with Leaflet.
+
+Host your webpage on either GitHub Pages, RPubs, or NeoCities.
+
+Your webpage must contain the date that you created the document, and it must contain a map created with Leaflet. We would love to see you show off your creativity!
+
+## About Leaflet
+Leaflet is a JavaScript library, and then there is an associated Leaflet package for R that makes use of this JavaScript library to create interactive maps within the R environment. 
+
+The `leaflet()` function creates a map widget that can be stored in a variable so that the map can be modify later on. One can
+add features to the map using the pipe operator (`%>%`) just like in dplyr. 
+
+The `addTiles()` function adds mapping data from [Open Street Map](http://www.openstreetmap.org/).
+
+It is possible to add markers to the map using the `addMarkers()` function by specifying the longitude and latitude.
+One can make own markers from `.png` files or add popups for each marker (string of plain text, or HTML to be rendered inside of each popup).
+
+Leaflet allows you to plot clusters of markers using `addMarkers(clusterOptions = markerClusterOptions())`. When zooming in to each cluster, the clusters will separate until the individual markers can be seen.
+
+
+```{r leaflet, echo=FALSE, warning=FALSE}
+# install.packages("leaflet")
+library(leaflet)
+```
+
+## Assignment: Map of CEU Campus
+
+Since I am going to study Business Analytics at Central European University from September 2019, I decided to map out the different buildings in Budapest that belong to the university:
+
+### CEU Buildings:
+1. Nador utca 15 is the key entrance to the University and is home to the CEU Auditorium, the CEU Library, classrooms, a cafe and a restaurant. The building opened in fall 2016 with neighboring Nador utca 13. The four interconnected buildings house classrooms, academic departments, administrative units, and student study spaces.
+2. Zrinyi utca 14 houses some classrooms, academic and administrative units.
+3. Oktober 6. utca 7. This building houses classrooms, the Oktober Hall event space and several academic units.
+4. Vigyazo Ferenc utca 2 houses academic units and faculty offices.
+5. Jozsef Attila utca 24. This building houses administrative units.
+6. CEU Press
+7. Vera and Donald Blinken Open Society Archives
+
+```{r map2, message=FALSE}
+# data frame with coordinates of all CEU buildings 
+df <- data.frame(lat = c(47.5012048, 47.5, 47.502547, 47.501003, 47.499130, 47.500644, 47.502647),
+                 lng = c(19.0499434, 19.05, 19.050616, 19.047830, 19.053587, 19.050905, 19.053404),
+                 col = c("blue", "blue","blue", "yellow","yellow","yellow","yellow"), 
+                 stringsAsFactors = FALSE)
+
+# study logo
+StudyIcon <- makeIcon(
+  iconUrl = "https://cdn.onlinewebfonts.com/svg/img_534893.png",
+  iconWidth = 31*215/230, iconHeight = 31,
+  iconAnchorX = 31*215/230/2, iconAnchorY = 16
+)
+
+# popups
+CEUSites <- c(
+  "<a href='https://www.ceu.edu//'>Nador utca 15</a>",
+  "<a href='https://www.ceu.edu/'>Zrinyi utca 14s</a>",
+  "<a href='https://www.ceu.edu/'>Oktober 6. utca 7</a>",
+  "<a href='https://www.ceu.edu/'>Vigyazo Ferenc utca 2</a>",
+  "<a href='https://www.ceu.edu/'>Jozsef Attila utca 24</a>",
+  "<a href='http://ceupress.com/'>CEU Press</a>",
+  "<a href='http://www.osaarchivum.org/'>Vera and Donald Blinken Open Society Archives</a>"
+)
+
+df %>%  
+  leaflet() %>% 
+  addTiles() %>% 
+  addMarkers(icon = StudyIcon, popup = CEUSites)
+```
+
+
+```{r no_piping, echo=FALSE, eval=FALSE}
+# above: piping notation
+# identical code:
+my_map = leaflet()
+my_map = addTiles(my_map)
+my_map = addMarkers(my_map, lat=39.2980803, lng=-76.5898801, popup="Jeff Leek's Office")
+
+
+df %>%  
+  leaflet() %>% 
+  addTiles() %>% 
+  addMarkers(icon = StudyIcon, popup = CEUSites) %>%
+  addLegend(labels = c("Classrooms", "Other Sites"), colors = c("blue", "yellow"))
+```
