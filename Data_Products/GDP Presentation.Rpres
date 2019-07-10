@@ -1,0 +1,47 @@
+Gross Domestic Product per Country
+========================================================
+author: Lisa Halmschlager 
+date: July 8, 2019
+autosize: true
+
+Introduction
+========================================================
+
+I created a shiny application that allows the user to find out the GDP in million USD for a country of choice.
+
+The application features an input widget to select the country of interest.
+
+Data Source
+========================================================
+
+The original data sources can be found here:
+http://data.worldbank.org/data-catalog/GDP-ranking-table
+
+The download link is as follows: 
+https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FGDP.csv
+
+Data Summary
+========================================================
+
+```{r URL, echo=FALSE}
+URL_GDP <- "https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2FGDP.csv"
+```
+
+```{r setup, echo=TRUE}
+GDP_dataset <- read.csv(URL_GDP, header = FALSE, stringsAsFactors=FALSE)
+str(GDP_dataset)
+```
+
+GDPApp
+========================================================
+
+```{r, echo=FALSE}
+knitr::include_graphics("GDPApp_Screenshot.png")
+```
+
+GDP App
+========================================================
+
+Have fun trying it out yourself:
+
+https://lisahlmsch.shinyapps.io/GDPApp/
